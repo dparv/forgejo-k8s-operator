@@ -364,7 +364,7 @@ class ForgejoK8SOperatorCharm(ops.CharmBase):
         secret, _ = self.container.exec(cmd.split()).wait_output()
         # register the runner with the generated secret
         register_cmd = (
-          f"{shlex.quote(FORGEJO_CLI)} forgejo-cli --config=/etc/forgejo/config.ini actions register "
+          f"{shlex.quote(FORGEJO_CLI)} --config=/etc/forgejo/config.ini forgejo-cli actions register "
           f"--secret {shlex.quote(secret)} "
           f"--labels {shlex.quote(labels)} "
           f"--name {shlex.quote(name)} "
