@@ -388,6 +388,7 @@ class ForgejoK8SOperatorCharm(ops.CharmBase):
           f"{shlex.quote(FORGEJO_CLI)} --config=/etc/forgejo/config.ini admin user create "
           f"--username {shlex.quote(username)} "
           f"--email {shlex.quote(email)} "
+          f"--admin "
           f"--random-password"
         )
         argv = ["su", "git", "-c", cmd]
