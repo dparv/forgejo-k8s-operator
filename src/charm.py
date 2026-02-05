@@ -12,6 +12,7 @@ import re
 import socket
 from typing import Optional
 import secrets
+import shlex
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
@@ -86,6 +87,9 @@ class ForgejoK8SOperatorCharm(ops.CharmBase):
         framework.observe(self.on.config_changed, self._on_config_changed)
         framework.observe(self.on.collect_unit_status, self._on_collect_status)
         framework.observe(getattr(self.on, "data_storage_attached"), self._on_storage_attached)
+
+        # actions
+        framework.observe(self.on.generate_runner_secret_action, self._on_generate_runner_secret)
 
         # database support
         self.database = DatabaseRequires(
@@ -343,6 +347,32 @@ class ForgejoK8SOperatorCharm(ops.CharmBase):
         self.container.exec(["chown", f"{FORGEJO_SYSTEM_USER}:{FORGEJO_SYSTEM_GROUP}", FORGEJO_DATA_DIR])
 
 
+    def _on_generate_runner_secret(self, event: ops.ActionEvent) -> None:
+        """Generate a new runner secret and return it as action output."""
+        # SECRET=$(forgejo forgejo-cli actions generate-secret)
+        # forgejo forgejo-cli actions register --secret $SECRET --labels "docker" --labels "machine2"
+        params = event.params
+        name = params.get("name", "runner")
+        labels = params.get("labels", "docker")
+        scope = params.get("scope", None)
+        add_scope = ""
+        if scope:
+            add_scope = f"--scope {scope}"
+        # generate the secret
+        cmd = f"{FORGEJO_CLI} forgejo-cli actions generate-secret"
+        secret, _ = self.container.exec(cmd.split()).wait_output()
+        # register the runner with the generated secret
+        register_cmd = (
+          f"{shlex.quote(FORGEJO_CLI)} forgejo-cli --config=/etc/forgejo/config.ini actions register "
+          f"--secret {shlex.quote(secret)} "
+          f"--labels {shlex.quote(labels)} "
+          f"--name {shlex.quote(name)} "
+          f"{add_scope}".strip()
+        )
+        argv = ["su", "git", "-c", register_cmd]
+        self.container.exec(argv).wait_output()
+        # send the secret back as action output
+        event.set_results({"runner-secret": secret})
 
 
 if __name__ == "__main__":  # pragma: nocover

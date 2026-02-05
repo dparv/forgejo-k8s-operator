@@ -90,11 +90,27 @@ config:
       description: |
         Domain name to use as root url for Forgejo.
 
-        If not specified, the juju aaplication name is used. Note that when related to an ingress app like traefik,
-        tine final url has both domains, like <forgejo-charm-config-domain>.<ingress-domain>
+        If not specified, the juju aplication name is used. Note that when related to an ingress app like traefik,
+        the final url has both domains, like <forgejo-charm-config-domain>.<ingress-domain>
       default: "forgejo.internal"
       type: string
 
 assumes:
   - juju >= 3.5
   - k8s-api
+
+actions:
+  generate-runner-secret:
+    description: Generate a registration secret for a Forgejo Actions Runner.
+    params:
+      name:
+        type: string
+        description: Name of the runner (default is "runner")
+      labels:
+        type: string
+        description: |
+          comma separated list of labels supported by the runner
+          (e.g. docker,ubuntu-latest,self-hosted) (default is "docker")
+      scope:
+        type: string
+        description: owner/repo; leave empty for a global runner
