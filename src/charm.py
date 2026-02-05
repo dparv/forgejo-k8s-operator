@@ -90,6 +90,7 @@ class ForgejoK8SOperatorCharm(ops.CharmBase):
 
         # actions
         framework.observe(self.on.generate_runner_secret_action, self._on_generate_runner_secret)
+        framework.observe(self.on.create_admin_user_action, self._on_create_admin_user)
 
         # database support
         self.database = DatabaseRequires(
@@ -373,6 +374,25 @@ class ForgejoK8SOperatorCharm(ops.CharmBase):
         self.container.exec(argv).wait_output()
         # send the secret back as action output
         event.set_results({"runner-secret": secret})
+
+
+    def _on_create_admin_user(self, event: ops.ActionEvent) -> None:
+        """Create an admin user in Forgejo."""
+        params = event.params
+        username = params.get("username")
+        email = params.get("email")
+        if not username or not email:
+            event.fail("username, password, and email parameters are required")
+            return
+        cmd = (
+          f"{shlex.quote(FORGEJO_CLI)} --config=/etc/forgejo/config.ini admin user create "
+          f"--username {shlex.quote(username)} "
+          f"--email {shlex.quote(email)} "
+          f"--random-password"
+        )
+        argv = ["su", "git", "-c", cmd]
+        output, _ = self.container.exec(argv).wait_output()
+        event.set_results({"output": output})
 
 
 if __name__ == "__main__":  # pragma: nocover

@@ -114,3 +114,17 @@ actions:
       scope:
         type: string
         description: owner/repo; leave empty for a global runner
+
+  create-admin-user:
+    description: Create an admin user in Forgejo with random password.
+    params:
+      username:
+        type: string
+        description: Username for the new admin user (default is "admin")
+      email:
+        type: string
+        description: Email is requried
+    required:
+    - username
+    - email
+
